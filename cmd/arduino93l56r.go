@@ -23,8 +23,8 @@ func NewArduino93L56R(serPort string) *Arduino93L56R {
 			BaudRate:              9600,
 			DataBits:              8,
 			StopBits:              1,
-			InterCharacterTimeout: 0,
-			MinimumReadSize:       1,
+			InterCharacterTimeout: 100,
+			MinimumReadSize:       0,
 			ParityMode:            serial.PARITY_NONE,
 		},
 		eepromBuf:  make([]byte, 256),
@@ -42,7 +42,15 @@ func (a *Arduino93L56R) Connect() error {
 	time.Sleep(2 * time.Second)
 
 	readBytes, err := io.ReadAtLeast(a.serial, a.eepromBuf, 5)
-	resetBytes := a.eepromBuf[readBytes-5 : readBytes]
+	if readBytes == 0 {
+		a.serial.Write([]byte{'0', '\n'})
+		time.Sleep(1 * time.Second)
+		readBytes, err = io.ReadAtLeast(a.serial, a.eepromBuf, 5)
+	}
+	resetBytes := make([]byte, 0)
+	if readBytes > 0 {
+		resetBytes = a.eepromBuf[readBytes-5 : readBytes]
+	}
 	if readBytes < 5 || err != nil || !reflect.DeepEqual(resetBytes, []byte{0x52, 0x65, 0x73, 0x65, 0x74}) {
 		return fmt.Errorf("Arduino did not send expected Reset on initialization. Expected 5 bytes, got %d. Error: %s\n\nResponse: %s", readBytes, err, a.eepromBuf[:readBytes])
 	}
