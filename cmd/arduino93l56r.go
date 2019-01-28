@@ -23,7 +23,7 @@ func NewArduino93L56R(serPort string) *Arduino93L56R {
 			BaudRate:              9600,
 			DataBits:              8,
 			StopBits:              1,
-			InterCharacterTimeout: 100,
+			InterCharacterTimeout: 200,
 			MinimumReadSize:       0,
 			ParityMode:            serial.PARITY_NONE,
 		},
