@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"reflect"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -67,11 +68,24 @@ var writeCmd = &cobra.Command{
 			return fmt.Errorf("The content of the Arduino buffer were not the same as the content of the supplied file.\n\nFile:\n%s\n\nArduino Buffer:\n%s", hex.Dump(buf), hex.Dump(ver))
 		}
 
+		start := time.Now()
+
 		if err = arduino.WriteBuffer(); err != nil {
 			return err
 		}
 
-		// TODO: re-read contents and verify it matches desired write
+		duration := time.Since(start)
+
+		ver, err = arduino.Read()
+		if err != nil {
+			return err
+		}
+
+		if !reflect.DeepEqual(ver, buf) {
+			return fmt.Errorf("The content written to the EEPROM was not the same as the content of the supplied file after writing.\n\nFile:\n%s\n\nEEPROM Content:\n%s", hex.Dump(buf), hex.Dump(ver))
+		} else {
+			fmt.Printf("Successfully wrote file to EEPROM in %s.\n\n%s", duration, hex.Dump(ver))
+		}
 
 		return nil
 	},
