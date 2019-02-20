@@ -24,6 +24,7 @@ import (
 )
 
 var outFile string
+var binLen int
 
 // readCmd represents the read command
 var readCmd = &cobra.Command{
@@ -44,7 +45,7 @@ var readCmd = &cobra.Command{
 		}
 		defer arduino.Close()
 
-		buf, err := arduino.Read()
+		buf, err := arduino.Read(eepromAddr, binLen)
 		if err != nil {
 			return err
 		}
@@ -69,6 +70,7 @@ func init() {
 	// and all subcommands, e.g.:
 	// readCmd.PersistentFlags().String("foo", "", "A help for foo")
 	readCmd.Flags().StringVar(&outFile, "output-file", "", "A file to store the contents read from the EEPROM")
+	readCmd.Flags().IntVar(&binLen, "read-length", 256, "The number of bytes to read from the EEPROM. Default is 256")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:

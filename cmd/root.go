@@ -29,6 +29,7 @@ import (
 var logger *log.Logger
 var cfgFile string
 var serPort string
+var eepromAddr int
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -66,6 +67,7 @@ func init() {
 	// will be global for your application.
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.93l56r-cli.yaml)")
 	rootCmd.PersistentFlags().StringVar(&serPort, "serial-port", "", "Device path or name for the serial port your arduino is connected to. I.E. COM1, /dev/cu.usbmodem*")
+	rootCmd.PersistentFlags().IntVar(&eepromAddr, "start-address", 0, "The starting address of the EEPROM to begin the read or write operation. Default is 0")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.

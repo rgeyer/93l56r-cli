@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  name = "github.com/dim13/cobs"
+  packages = ["."]
+  revision = "1625aefb95749c0efda8f4e1f99c4b64e77ddadc"
+  version = "v1.0.0"
+
+[[projects]]
   name = "github.com/fsnotify/fsnotify"
   packages = ["."]
   revision = "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9"
@@ -148,6 +154,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "643a910dd86364bb337c5de9b251adaace34046a1a59c15acb8981d303dd8811"
+  inputs-digest = "329147ca8adf2b3ad84e479de14f508ae62c6e0567772741220b61ec5671d9d7"
   solver-name = "gps-cdcl"
   solver-version = 1

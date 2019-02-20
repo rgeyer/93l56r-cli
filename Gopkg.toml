@@ -48,3 +48,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/jacobsa/go-serial"
+
+[[constraint]]
+  name = "github.com/dim13/cobs"
+  version = "1.0.0"

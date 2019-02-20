@@ -45,9 +45,7 @@ var writeCmd = &cobra.Command{
 			return fmt.Errorf("Unable to read the input file %s. Error: %s", inFile, err)
 		}
 
-		if len(buf) != 256 {
-			return fmt.Errorf("Unexpected file length. Expecting exactly 256 bytes, got %d", len(buf))
-		}
+		fmt.Println("Writing file with a len of ", len(buf))
 
 		arduino := NewArduino93L56R(serPort)
 		if err := arduino.Connect(); err != nil {
@@ -55,28 +53,17 @@ var writeCmd = &cobra.Command{
 		}
 		defer arduino.Close()
 
-		if err = arduino.LoadBuffer(buf); err != nil {
-			return err
-		}
-
-		ver, err := arduino.ReadBuffer()
-		if err != nil {
-			return err
-		}
-
-		if !reflect.DeepEqual(ver, buf) {
-			return fmt.Errorf("The content of the Arduino buffer were not the same as the content of the supplied file.\n\nFile:\n%s\n\nArduino Buffer:\n%s", hex.Dump(buf), hex.Dump(ver))
-		}
-
 		start := time.Now()
 
-		if err = arduino.WriteBuffer(); err != nil {
-			return err
+		for i := 0; i < len(buf)/2; i++ {
+			if err = arduino.Write(i, buf[i*2:i*2+2]); err != nil {
+				return err
+			}
 		}
 
 		duration := time.Since(start)
 
-		ver, err = arduino.Read()
+		ver, err := arduino.Read(eepromAddr, len(buf))
 		if err != nil {
 			return err
 		}
