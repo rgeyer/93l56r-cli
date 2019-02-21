@@ -68,6 +68,29 @@ func (a *Arduino93L56R) Close() {
 	a.serial.Close()
 }
 
+// TODO: This only works with I2C EEPROMs with up to 256 addresses, since the
+// arduino only sends a single address byte rather than two for a 16bit int
+func (a *Arduino93L56R) I2CRead(addr int, length int) ([]byte, error) {
+	addrMsb := byte(addr >> 8)
+	addrLsb := byte(addr & 0xFF)
+
+	lenMsb := byte(length >> 8)
+	lenLsb := byte(length & 0xFF)
+
+	readBuf := make([]byte, length)
+	_, err := a.serial.Write(cobs.Encode([]byte{0x03, 0x50, addrMsb, addrLsb, lenMsb, lenLsb}))
+	if err != nil {
+		return readBuf, fmt.Errorf("Unable to send read request. Error: %s", err)
+	}
+
+	byteCnt, err := io.ReadAtLeast(a.serial, readBuf, length)
+	if byteCnt != length || err != nil {
+		return readBuf, fmt.Errorf("Did not receive all bytes from EEPROM read. Expected %d bytes, got %d. Error: %s\n\nResponse:\n%s", length, byteCnt, err, hex.Dump(readBuf[:byteCnt]))
+	}
+
+	return readBuf, nil
+}
+
 func (a *Arduino93L56R) Read(addr int, length int) ([]byte, error) {
 	addrMsb := byte(addr >> 8)
 	addrLsb := byte(addr & 0xFF)

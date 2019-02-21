@@ -25,6 +25,7 @@ import (
 
 var outFile string
 var binLen int
+var icType string
 
 // readCmd represents the read command
 var readCmd = &cobra.Command{
@@ -35,17 +36,38 @@ var readCmd = &cobra.Command{
 			errorMsg := "You must supply the --output-file flag."
 			return errors.New(errorMsg)
 		}
+		switch test := icType; test {
+		case "microwire":
+			break
+		case "i2c":
+			break
+		default:
+			return errors.New("You must supply the --type flag, and it must be one of: microwire, i2c")
+		}
+
+		if binLen == 0 {
+			binLen = 256
+		}
 		return nil
 	},
 
 	RunE: func(cmd *cobra.Command, args []string) error {
+		buf := make([]byte, binLen)
+		var err error
 		arduino := NewArduino93L56R(serPort)
 		if err := arduino.Connect(); err != nil {
 			return err
 		}
 		defer arduino.Close()
 
-		buf, err := arduino.Read(eepromAddr, binLen)
+		if icType == "microwire" {
+			buf, err = arduino.Read(eepromAddr, binLen)
+		}
+
+		if icType == "i2c" {
+			buf, err = arduino.I2CRead(eepromAddr, binLen)
+		}
+
 		if err != nil {
 			return err
 		}
@@ -71,6 +93,7 @@ func init() {
 	// readCmd.PersistentFlags().String("foo", "", "A help for foo")
 	readCmd.Flags().StringVar(&outFile, "output-file", "", "A file to store the contents read from the EEPROM")
 	readCmd.Flags().IntVar(&binLen, "read-length", 256, "The number of bytes to read from the EEPROM. Default is 256")
+	readCmd.Flags().StringVar(&icType, "type", "", "The type of EEPROM you're trying to read. One of: microwire, i2c")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
