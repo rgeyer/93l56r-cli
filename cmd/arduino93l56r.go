@@ -115,8 +115,19 @@ func (a *Arduino93L56R) Read(addr int, length int) ([]byte, error) {
 func (a *Arduino93L56R) Write(addr int, buf []byte) error {
 	addrMsb := byte(addr >> 8)
 	addrLsb := byte(addr & 0xFF)
-	rawBytes := append([]byte{0x02, addrMsb, addrLsb}, buf...)
+
+	lenMsb := byte(len(buf) >> 8)
+	lenLsb := byte(len(buf) & 0xFF)
+	// TODO: Length here is *actual* length in bytes. The eeprom has 16bit registers
+	// so length is actually half of length of the supplied buffer. Everything
+	// downstream does the work to translate it. Not sure if this should be register
+	// length, rather than *actual* length.
+	rawBytes := append([]byte{0x02, addrMsb, addrLsb, lenMsb, lenLsb}, buf...)
 	packetBytes := cobs.Encode(rawBytes)
+
+	if len(packetBytes) > 64 {
+		return fmt.Errorf("The resulting COBS packet for the write request exceeds 64 bytes and will overflow the Arduino Serial buffer. Actual size was %d", len(packetBytes))
+	}
 
 	wroteBytes, err := a.serial.Write(packetBytes)
 	if wroteBytes != len(packetBytes) || err != nil {

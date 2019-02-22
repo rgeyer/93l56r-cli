@@ -30,6 +30,7 @@ var logger *log.Logger
 var cfgFile string
 var serPort string
 var eepromAddr int
+var icType string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -45,6 +46,15 @@ var rootCmd = &cobra.Command{
 		if serPort == "" {
 			errorMsg := "You must supply the --serial-port flag."
 			return errors.New(errorMsg)
+		}
+
+		switch test := icType; test {
+		case "microwire":
+			break
+		case "i2c":
+			break
+		default:
+			return errors.New("You must supply the --type flag, and it must be one of: microwire, i2c")
 		}
 		return nil
 	},
@@ -68,6 +78,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.93l56r-cli.yaml)")
 	rootCmd.PersistentFlags().StringVar(&serPort, "serial-port", "", "Device path or name for the serial port your arduino is connected to. I.E. COM1, /dev/cu.usbmodem*")
 	rootCmd.PersistentFlags().IntVar(&eepromAddr, "start-address", 0, "The starting address of the EEPROM to begin the read or write operation. Default is 0")
+	rootCmd.PersistentFlags().StringVar(&icType, "type", "", "The type of EEPROM you're trying to read. One of: microwire, i2c")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.

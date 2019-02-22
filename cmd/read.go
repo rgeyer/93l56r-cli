@@ -25,7 +25,6 @@ import (
 
 var outFile string
 var binLen int
-var icType string
 
 // readCmd represents the read command
 var readCmd = &cobra.Command{
@@ -35,18 +34,6 @@ var readCmd = &cobra.Command{
 		if outFile == "" {
 			errorMsg := "You must supply the --output-file flag."
 			return errors.New(errorMsg)
-		}
-		switch test := icType; test {
-		case "microwire":
-			break
-		case "i2c":
-			break
-		default:
-			return errors.New("You must supply the --type flag, and it must be one of: microwire, i2c")
-		}
-
-		if binLen == 0 {
-			binLen = 256
 		}
 		return nil
 	},
@@ -93,7 +80,6 @@ func init() {
 	// readCmd.PersistentFlags().String("foo", "", "A help for foo")
 	readCmd.Flags().StringVar(&outFile, "output-file", "", "A file to store the contents read from the EEPROM")
 	readCmd.Flags().IntVar(&binLen, "read-length", 256, "The number of bytes to read from the EEPROM. Default is 256")
-	readCmd.Flags().StringVar(&icType, "type", "", "The type of EEPROM you're trying to read. One of: microwire, i2c")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:

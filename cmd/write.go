@@ -45,8 +45,6 @@ var writeCmd = &cobra.Command{
 			return fmt.Errorf("Unable to read the input file %s. Error: %s", inFile, err)
 		}
 
-		fmt.Println("Writing file with a len of ", len(buf))
-
 		arduino := NewArduino93L56R(serPort)
 		if err := arduino.Connect(); err != nil {
 			return err
@@ -55,10 +53,18 @@ var writeCmd = &cobra.Command{
 
 		start := time.Now()
 
-		for i := 0; i < len(buf)/2; i++ {
-			if err = arduino.Write(i, buf[i*2:i*2+2]); err != nil {
+		wholePacketCount := len(buf) / 56
+		for l := 0; l < wholePacketCount; l++ {
+			startAddr := 56/2*l + eepromAddr
+			bufslice := buf[startAddr*2 : startAddr*2+56]
+			if err = arduino.Write(startAddr, bufslice); err != nil {
 				return err
 			}
+		}
+
+		remainder := buf[wholePacketCount*56:]
+		if err = arduino.Write(56/2*wholePacketCount+eepromAddr, remainder); err != nil {
+			return err
 		}
 
 		duration := time.Since(start)
