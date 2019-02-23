@@ -39,6 +39,17 @@ var writeCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		var maxPacketDataLen int
+		var wordSizeScale int
+
+		if icType == "microwire" {
+			maxPacketDataLen = 56
+			wordSizeScale = 2
+		}
+		if icType == "i2c" {
+			maxPacketDataLen = 55
+			wordSizeScale = 1
+		}
 		// TODO: Require a --force option to write without reading
 		buf, err := ioutil.ReadFile(inFile)
 		if err != nil {
@@ -53,23 +64,23 @@ var writeCmd = &cobra.Command{
 
 		start := time.Now()
 
-		wholePacketCount := len(buf) / 56
+		wholePacketCount := len(buf) / maxPacketDataLen
 		for l := 0; l < wholePacketCount; l++ {
-			startAddr := 56/2*l + eepromAddr
-			bufslice := buf[startAddr*2 : startAddr*2+56]
-			if err = arduino.Write(startAddr, bufslice); err != nil {
+			startAddr := maxPacketDataLen/wordSizeScale*l + eepromAddr
+			bufslice := buf[startAddr*wordSizeScale : startAddr*wordSizeScale+maxPacketDataLen]
+			if err = arduino.Write(startAddr, bufslice, icType); err != nil {
 				return err
 			}
 		}
 
-		remainder := buf[wholePacketCount*56:]
-		if err = arduino.Write(56/2*wholePacketCount+eepromAddr, remainder); err != nil {
+		remainder := buf[wholePacketCount*maxPacketDataLen:]
+		if err = arduino.Write(maxPacketDataLen/wordSizeScale*wholePacketCount+eepromAddr, remainder, icType); err != nil {
 			return err
 		}
 
 		duration := time.Since(start)
 
-		ver, err := arduino.Read(eepromAddr, len(buf))
+		ver, err := arduino.Read(eepromAddr, len(buf), icType)
 		if err != nil {
 			return err
 		}

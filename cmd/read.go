@@ -47,14 +47,7 @@ var readCmd = &cobra.Command{
 		}
 		defer arduino.Close()
 
-		if icType == "microwire" {
-			buf, err = arduino.Read(eepromAddr, binLen)
-		}
-
-		if icType == "i2c" {
-			buf, err = arduino.I2CRead(eepromAddr, binLen)
-		}
-
+		buf, err = arduino.Read(eepromAddr, binLen, icType)
 		if err != nil {
 			return err
 		}

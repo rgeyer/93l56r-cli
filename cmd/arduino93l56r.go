@@ -91,15 +91,24 @@ func (a *Arduino93L56R) I2CRead(addr int, length int) ([]byte, error) {
 	return readBuf, nil
 }
 
-func (a *Arduino93L56R) Read(addr int, length int) ([]byte, error) {
+func (a *Arduino93L56R) Read(addr int, length int, icType string) ([]byte, error) {
 	addrMsb := byte(addr >> 8)
 	addrLsb := byte(addr & 0xFF)
 
 	lenMsb := byte(length >> 8)
 	lenLsb := byte(length & 0xFF)
 
+	var rawBytes []byte
+	if icType == "microwire" {
+		rawBytes = []byte{0x01, addrMsb, addrLsb, lenMsb, lenLsb}
+	}
+	if icType == "i2c" {
+		rawBytes = []byte{0x03, 0x50, addrMsb, addrLsb, lenMsb, lenLsb}
+	}
+	packetBytes := cobs.Encode(rawBytes)
+
 	readBuf := make([]byte, length)
-	_, err := a.serial.Write(cobs.Encode([]byte{0x01, addrMsb, addrLsb, lenMsb, lenLsb}))
+	_, err := a.serial.Write(packetBytes)
 	if err != nil {
 		return readBuf, fmt.Errorf("Unable to send read request. Error: %s", err)
 	}
@@ -112,7 +121,8 @@ func (a *Arduino93L56R) Read(addr int, length int) ([]byte, error) {
 	return readBuf, nil
 }
 
-func (a *Arduino93L56R) Write(addr int, buf []byte) error {
+func (a *Arduino93L56R) Write(addr int, buf []byte, icType string) error {
+	var ackCmd byte
 	addrMsb := byte(addr >> 8)
 	addrLsb := byte(addr & 0xFF)
 
@@ -122,7 +132,15 @@ func (a *Arduino93L56R) Write(addr int, buf []byte) error {
 	// so length is actually half of length of the supplied buffer. Everything
 	// downstream does the work to translate it. Not sure if this should be register
 	// length, rather than *actual* length.
-	rawBytes := append([]byte{0x02, addrMsb, addrLsb, lenMsb, lenLsb}, buf...)
+	var rawBytes []byte
+	if icType == "microwire" {
+		rawBytes = append([]byte{0x02, addrMsb, addrLsb, lenMsb, lenLsb}, buf...)
+		ackCmd = 130
+	}
+	if icType == "i2c" {
+		rawBytes = append([]byte{0x04, 0x50, addrMsb, addrLsb, lenMsb, lenLsb}, buf...)
+		ackCmd = 132
+	}
 	packetBytes := cobs.Encode(rawBytes)
 
 	if len(packetBytes) > 64 {
@@ -149,8 +167,8 @@ func (a *Arduino93L56R) Write(addr int, buf []byte) error {
 		}
 
 		response := cobs.Decode(readBytes)
-		if response[0] != 130 {
-			return fmt.Errorf("Arduino acknowledged write request with unexpected packet. Expected command 130, got %d", response[0])
+		if response[0] != ackCmd {
+			return fmt.Errorf("Arduino acknowledged write request with unexpected packet. Expected command %d, got %d", ackCmd, response[0])
 		}
 		break
 	}
