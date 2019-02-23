@@ -64,7 +64,7 @@ var readCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(readCmd)
+	eepromCmd.AddCommand(readCmd)
 
 	// Here you will define your flags and configuration settings.
 

@@ -96,7 +96,7 @@ var writeCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(writeCmd)
+	eepromCmd.AddCommand(writeCmd)
 
 	// Here you will define your flags and configuration settings.
 
