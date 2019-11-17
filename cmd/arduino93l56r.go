@@ -5,10 +5,18 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/dim13/cobs"
 	"github.com/jacobsa/go-serial/serial"
+)
+
+type IcType string
+
+const (
+	Microwire IcType = "microwire"
+	I2C       IcType = "i2c"
 )
 
 type Arduino93L56R struct {
@@ -42,10 +50,11 @@ func (a *Arduino93L56R) Connect() error {
 	// c1 := make(chan error)
 	// go func() {
 	for i := 1; i <= 50; i++ {
+		fmt.Printf("Sending reset request. Raw bytes is\n%s", hex.Dump([]byte{0x00}))
 		a.serial.Write(cobs.Encode([]byte{0x00}))
 
 		readBytes, err := a.reader.ReadBytes(0x00)
-		if err != nil && err == io.EOF {
+		if err != nil && (err == io.EOF || strings.Contains(err.Error(), "multiple Read calls")) {
 			time.Sleep(100 * time.Millisecond)
 			continue
 		}
@@ -58,6 +67,7 @@ func (a *Arduino93L56R) Connect() error {
 		if response[0] != 128 {
 			return fmt.Errorf("Arduino acknowledged reset request with unexpected packet. Expected command 128, got %d", response[0])
 		}
+		fmt.Printf("Response received. Raw bytes is\n%s", hex.Dump(response))
 		break
 	}
 
@@ -99,14 +109,15 @@ func (a *Arduino93L56R) Read(addr int, length int, icType string) ([]byte, error
 	lenLsb := byte(length & 0xFF)
 
 	var rawBytes []byte
-	if icType == "microwire" {
+	if icType == string(Microwire) {
 		rawBytes = []byte{0x01, addrMsb, addrLsb, lenMsb, lenLsb}
 	}
-	if icType == "i2c" {
+	if icType == string(I2C) {
 		rawBytes = []byte{0x03, 0x50, addrMsb, addrLsb, lenMsb, lenLsb}
 	}
 	packetBytes := cobs.Encode(rawBytes)
 
+	fmt.Printf("Sending read request for %s IC type. Raw bytes is \n%s\n", icType, hex.Dump(rawBytes))
 	readBuf := make([]byte, length)
 	_, err := a.serial.Write(packetBytes)
 	if err != nil {
@@ -133,11 +144,11 @@ func (a *Arduino93L56R) Write(addr int, buf []byte, icType string) error {
 	// downstream does the work to translate it. Not sure if this should be register
 	// length, rather than *actual* length.
 	var rawBytes []byte
-	if icType == "microwire" {
+	if icType == string(Microwire) {
 		rawBytes = append([]byte{0x02, addrMsb, addrLsb, lenMsb, lenLsb}, buf...)
 		ackCmd = 130
 	}
-	if icType == "i2c" {
+	if icType == string(I2C) {
 		rawBytes = append([]byte{0x04, 0x50, addrMsb, addrLsb, lenMsb, lenLsb}, buf...)
 		ackCmd = 132
 	}
@@ -174,7 +185,6 @@ func (a *Arduino93L56R) Write(addr int, buf []byte, icType string) error {
 	}
 	if writeResponseReceived {
 		return nil
-	} else {
-		return fmt.Errorf("Timed out waiting for response to write request")
 	}
+	return fmt.Errorf("Timed out waiting for response to write request")
 }
