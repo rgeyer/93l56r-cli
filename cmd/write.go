@@ -44,6 +44,7 @@ var writeCmd = &cobra.Command{
 
 		if icType == "microwire" {
 			maxPacketDataLen = 56
+			// maxPacketDataLen = 10
 			wordSizeScale = 2
 		}
 		if icType == "i2c" {

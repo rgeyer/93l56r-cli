@@ -166,7 +166,7 @@ func (a *Arduino93L56R) Write(addr int, buf []byte, icType string) error {
 	writeResponseReceived := false
 	for i := 1; i <= 50; i++ {
 		readBytes, err := a.reader.ReadBytes(0x00)
-		if err != nil && err == io.EOF {
+		if err != nil && (err == io.EOF || strings.Contains(err.Error(), "multiple Read calls")) {
 			time.Sleep(100 * time.Millisecond)
 			continue
 		}
